@@ -34,9 +34,27 @@
 
 package com.yourcompany.android.jetpackcompose.screens
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.yourcompany.android.jetpackcompose.R
 import com.yourcompany.android.jetpackcompose.router.BackButtonHandler
 import com.yourcompany.android.jetpackcompose.router.JetFundamentalsRouter
@@ -77,21 +95,50 @@ private val items = listOf(
 
 @Composable
 fun ListScreen() {
-  MyList()
+    MyList()
 
-  BackButtonHandler {
-    JetFundamentalsRouter.navigateTo(Screen.Navigation)
-  }
+    BackButtonHandler {
+        JetFundamentalsRouter.navigateTo(Screen.Navigation)
+    }
 }
 
 @Composable
 fun MyList() {
-  //TODO add your code here
+    LazyColumn {
+        items(items) { item ->
+            ListItem(bookCategory = item)
+        }
+    }
 }
 
 @Composable
 fun ListItem(bookCategory: BookCategory, modifier: Modifier = Modifier) {
-  //TODO add your code here
+    Column(
+        modifier = modifier.padding(8.dp)
+    ) {
+        Text(
+            text = stringResource(id = bookCategory.categoryResourceId),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = colorResource(id = R.color.colorPrimary)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow {
+            items(bookCategory.bookImageResources) { item ->
+                BookImage(imageResId = item)
+            }
+        }
+    }
+}
+
+@Composable
+fun BookImage(@DrawableRes imageResId: Int) {
+    Image(
+        painter = painterResource(id = imageResId),
+        contentDescription = stringResource(R.string.book_image),
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(170.dp, 200.dp)
+    )
 }
 
 data class BookCategory(@StringRes val categoryResourceId: Int, val bookImageResources: List<Int>)
