@@ -41,14 +41,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.yourcompany.android.jetnotes.routing.Screen
 import com.yourcompany.android.jetnotes.theme.JetNotesTheme
 import com.yourcompany.android.jetnotes.ui.components.AppDrawer
 import com.yourcompany.android.jetnotes.ui.screens.NoteScreen
+import com.yourcompany.android.jetnotes.ui.screens.SaveNoteScreen
+import com.yourcompany.android.jetnotes.ui.screens.TrashScreen
 import com.yourcompany.android.jetnotes.viewmodel.MainViewModel
 import com.yourcompany.android.jetnotes.viewmodel.MainViewModelFactory
 import kotlinx.coroutines.launch
@@ -77,14 +84,28 @@ class MainActivity : AppCompatActivity() {
                 val coroutineScope = rememberCoroutineScope()
                 val scaffoldState: ScaffoldState = rememberScaffoldState()
                 val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
 
                 Scaffold(
                     scaffoldState = scaffoldState,
                     drawerContent = {
                         AppDrawer(
-                            currentScreen = Screen.Notes,
+                            currentScreen = Screen.fromRoute(navBackStackEntry?.destination?.route),
                             onScreenSelected = { screen ->
-                                /* TODO */
+                                navController.navigate(screen.route) {
+                                    // Pop up to start destination to avoid building the stack
+                                    // for every screen selection.
+                                    popUpTo(
+                                        navController.graph.findStartDestination().id
+                                    ) {
+                                        saveState = true
+                                    }
+                                    // Prevent copies of the same destination when screen is
+                                    // reselected
+                                    launchSingleTop = true
+                                    // Restore state when selecting previously selected screen
+                                    restoreState = true
+                                }
                                 coroutineScope.launch {
                                     scaffoldState.drawerState.close()
                                 }
@@ -92,17 +113,45 @@ class MainActivity : AppCompatActivity() {
                         )
                     },
                     content = {
-                        NavHost(
+                        MainActivityScreen(
                             navController = navController,
-                            startDestination = Screen.Notes.route
-                        ) {
-                            composable(Screen.Notes.route) {
-                                NoteScreen(viewModel = viewModel)
+                            viewModel = viewModel,
+                            openNavigationDrawer = {
+                                coroutineScope.launch { scaffoldState.drawerState.open() }
                             }
-                        }
+                        )
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MainActivityScreen(
+    navController: NavHostController,
+    viewModel: MainViewModel,
+    openNavigationDrawer: () -> Unit
+) {
+    NavHost(navController = navController, startDestination = Screen.Notes.route) {
+        composable(Screen.Notes.route) {
+            NoteScreen(
+                viewModel = viewModel,
+                onOpenNavigationDrawer = openNavigationDrawer,
+                onNavigateToSaveNote = { navController.navigate(Screen.SaveNote.route) }
+            )
+        }
+        composable(Screen.SaveNote.route) {
+            SaveNoteScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Trash.route) {
+            TrashScreen(
+                viewModel = viewModel,
+                openNavigationDrawer = openNavigationDrawer
+            )
         }
     }
 }

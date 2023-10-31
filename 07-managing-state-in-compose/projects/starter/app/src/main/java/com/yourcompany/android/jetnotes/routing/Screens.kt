@@ -37,7 +37,18 @@ package com.yourcompany.android.jetnotes.routing
  * Class defining all possible screens in the app.
  */
 sealed class Screen(val route: String) {
-  object Notes : Screen("Notes")
-  object SaveNote : Screen("SaveNote")
-  object Trash : Screen("Trash")
+    object Notes : Screen("Notes")
+    object SaveNote : Screen("SaveNote")
+    object Trash : Screen("Trash")
+    companion object {
+        const val NOTES = "Notes"
+        const val SAVE_NOTE = "SaveNote"
+        const val TRASH = "Trash"
+        fun fromRoute(route: String?): Screen = when (route) {
+            SAVE_NOTE -> SaveNote
+            TRASH -> Trash
+            else -> Notes
+        }
+    }
+
 }

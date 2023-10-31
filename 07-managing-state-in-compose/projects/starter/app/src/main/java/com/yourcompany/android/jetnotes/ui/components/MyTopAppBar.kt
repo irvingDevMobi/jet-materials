@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.yourcompany.android.jetnotes.theme.JetNotesTheme
 
 @Composable
-fun TopAppBar(
+fun MyTopAppBar(
     title: String,
     icon: ImageVector,
     onIconClick: () -> Unit
@@ -64,7 +64,7 @@ fun TopAppBar(
 @Composable
 fun TopAppBarPreview() {
     JetNotesTheme {
-        TopAppBar(title = "Jet Notes", icon = Icons.Filled.Menu) {
+        MyTopAppBar(title = "Jet Notes", icon = Icons.Filled.Menu) {
 
         }
     }
