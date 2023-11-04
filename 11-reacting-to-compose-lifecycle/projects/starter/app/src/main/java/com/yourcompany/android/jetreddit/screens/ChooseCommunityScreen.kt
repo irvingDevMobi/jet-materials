@@ -34,18 +34,38 @@
 package com.yourcompany.android.jetreddit.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yourcompany.android.jetreddit.R
+import com.yourcompany.android.jetreddit.routing.Screen
 import com.yourcompany.android.jetreddit.viewmodel.MainViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 
 private const val SEARCH_DELAY_MILLIS = 300L
 
@@ -53,53 +73,100 @@ private val defaultCommunities = listOf("kodeco", "androiddev", "puppies")
 
 @Composable
 fun ChooseCommunityScreen(
-  viewModel: MainViewModel,
-  modifier: Modifier = Modifier,
-  onBackSelected: () -> Unit
+    viewModel: MainViewModel,
+    modifier: Modifier = Modifier,
+    onBackSelected: () -> Unit
 ) {
-  //TODO Add your code here
+    val scope = rememberCoroutineScope()
+    val communities: List<String> by viewModel.subreddits.observeAsState(initial = emptyList())
+    var searchedText by remember { mutableStateOf("") }
+    var currentJob by remember { mutableStateOf<Job?>(null) }
+    val activeColor = MaterialTheme.colors.onSurface
+
+    LaunchedEffect(Unit) {
+        viewModel.searchCommunities(searchedText)
+    }
+    Column {
+        ChooseCommunityTopBar(onBackSelected = onBackSelected)
+        TextField(
+            value = searchedText,
+            onValueChange = {
+                searchedText = it
+                currentJob?.cancel()
+                currentJob = scope.async {
+                    delay(SEARCH_DELAY_MILLIS)
+                    viewModel.searchCommunities(searchedText)
+                }
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(id = R.string.search)
+                )
+            },
+            label = { Text(text = stringResource(id = R.string.search)) },
+            modifier = modifier
+                .padding(horizontal = 8.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = activeColor,
+                focusedLabelColor = activeColor,
+                cursorColor = activeColor,
+                backgroundColor = MaterialTheme.colors.surface
+            )
+        )
+        SearchedCommunities(communities = communities, viewModel = viewModel)
+    }
 }
 
 @Composable
 fun SearchedCommunities(
-  communities: List<String>,
-  viewModel: MainViewModel?,
-  modifier: Modifier = Modifier
+    communities: List<String>,
+    viewModel: MainViewModel?,
+    modifier: Modifier = Modifier
 ) {
-  //TODO Add your code here
+    communities.forEach {
+        Community(
+            text = it,
+            modifier = modifier,
+            onCommunityClicked = {
+                viewModel?.selectedCommunity?.postValue(it)
+                Screen.JetRedditRouter.goBack()
+            }
+        )
+    }
 }
 
 @Composable
 fun ChooseCommunityTopBar(
-  modifier: Modifier = Modifier,
-  onBackSelected: () -> Unit
+    modifier: Modifier = Modifier,
+    onBackSelected: () -> Unit
 ) {
 
-  val colors = MaterialTheme.colors
+    val colors = MaterialTheme.colors
 
-  TopAppBar(
-    title = {
-      Text(
-        fontSize = 16.sp,
-        text = stringResource(R.string.choose_community),
-        color = colors.primaryVariant
-      )
-    },
-    navigationIcon = {
-      IconButton(
-        onClick = { onBackSelected.invoke() }
-      ) {
-        Icon(
-          imageVector = Icons.Default.Close,
-          tint = colors.primaryVariant,
-          contentDescription = stringResource(id = R.string.close)
-        )
-      }
-    },
-    backgroundColor = colors.primary,
-    elevation = 0.dp,
-    modifier = modifier
-      .height(48.dp)
-      .background(Color.Blue)
-  )
+    TopAppBar(
+        title = {
+            Text(
+                fontSize = 16.sp,
+                text = stringResource(R.string.choose_community),
+                color = colors.primaryVariant
+            )
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = { onBackSelected.invoke() }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    tint = colors.primaryVariant,
+                    contentDescription = stringResource(id = R.string.close)
+                )
+            }
+        },
+        backgroundColor = colors.primary,
+        elevation = 0.dp,
+        modifier = modifier
+            .height(48.dp)
+            .background(Color.Blue)
+    )
 }
